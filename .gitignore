@@ -1,0 +1,39 @@
+*.*~
+#java specific
+*.class
+*.jar
+# without gradle-wrapper.jar our build will fail
+!gradle/wrapper/gradle-wrapper.jar
+
+#log specific
+*.log
+
+#Mac
+**/.DS_Store
+
+### Gradle ###
+.gradle
+**/build/
+**/logs/
+**/out/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.env
+
+### IntelliJ IDEA ###
+**/.idea
+*.iws
+*.iml
+*.ipr
+
+## Other plugins ###
+.continue
+amplicode.xml
+
+
