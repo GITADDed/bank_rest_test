@@ -1,1 +1,46 @@
-# Здесь будет OpenAPI описание всех доступных эндпоинтов и моделей данных.
+openapi: 3.0.3
+info:
+  title: "OpenAPI Specification for the API"
+  version: "1.0.0"
+  description: "This is the OpenAPI specification for the BANK REST API."
+servers:
+    - url: "/api/v1"
+      description: "Base URL for API endpoints"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string }
+        password: { type: string, format: password }
+
+    LoginResponse:
+      type: object
+      required: [accessToken, tokenType]
+      properties:
+        accessToken: { type: string }
+        tokenType: { type: string, example: "Bearer" }
+
+paths:
+    /auth/login:
+      post:
+        summary: "Login and get JWT"
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LoginRequest" }
+        responses:
+          "200":
+            description: "OK"
+            content:
+              application/json:
+                schema: { $ref: "#/components/schemas/LoginResponse" }
