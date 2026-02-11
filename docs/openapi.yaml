@@ -4,8 +4,8 @@ info:
   version: "1.0.0"
   description: "This is the OpenAPI specification for the BANK REST API."
 servers:
-    - url: "/api/v1"
-      description: "Base URL for API endpoints"
+  - url: "/api/v1"
+    description: "Base URL for API endpoints"
 
 components:
   securitySchemes:
@@ -17,30 +17,296 @@ components:
   schemas:
     LoginRequest:
       type: object
-      required: [username, password]
+      required: [ username, password ]
       properties:
         username: { type: string }
         password: { type: string, format: password }
 
     LoginResponse:
       type: object
-      required: [accessToken, tokenType]
+      required: [ accessToken, tokenType ]
       properties:
         accessToken: { type: string }
         tokenType: { type: string, example: "Bearer" }
 
+    CardStatus:
+      type: string
+      enum: [ ACTIVE, BLOCKED, EXPIRED ]
+
+    CardResponse:
+      type: object
+      required: [ id, maskedPan, last4, expiryMonth, expiryYear, status, balance ]
+      properties:
+        id: { type: string, format: uuid }
+        maskedPan: { type: string, example: "**** **** **** 1234" }
+        last4: { type: string, example: "1234" }
+        expiryMonth: { type: integer, minimum: 1, maximum: 12, example: 4 }
+        expiryYear: { type: integer,
+                      description: "Card expiration year (must not be in the past)",
+                      example: 2026 }
+        status: { $ref: "#/components/schemas/CardStatus" }
+        balance: { type: number, format: decimal, example: 1000.50 }
+
+    CardPage:
+      type: object
+      required: [ items, page, size, total ]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/CardResponse" }
+        page: { type: integer, example: 0 }
+        size: { type: integer, example: 10 }
+        total: { type: integer, example: 100 }
+
+    CardRequest:
+      type: object
+      required: [ ownerId, expiryMonth, expiryYear ]
+      properties:
+        ownerId: { type: string, format: uuid }
+        expiryMonth: { type: integer, minimum: 1, maximum: 12 }
+        expiryYear: { type: integer, description: "Must not be in the past" }
+
+    ErrorResponse:
+      type: object
+      required: [ code, message ]
+      properties:
+        code: { type: integer, example: 400 }
+        message: { type: string, example: "BAD_REQUEST" }
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string }
+              issue: { type: string }
+        traceId: { type: string }
+
+  parameters:
+    PageParam:
+      in: query
+      name: page
+      schema: { type: integer, minimum: 0, default: 0 }
+
+    SizeParam:
+      in: query
+      name: size
+      schema: { type: integer, minimum: 1, maximum: 100, default: 10 }
+
+    CardIdParam:
+      in: path
+      name: id
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    BadRequest:
+      description: "Bad Request"
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    Unauthorized:
+      description: "Unauthorized"
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    Forbidden:
+      description: "Forbidden"
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    NotFound:
+      description: "Not Found"
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    Conflict:
+      description: "Conflict"
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+
 paths:
-    /auth/login:
-      post:
-        summary: "Login and get JWT"
-        requestBody:
-          required: true
+  /auth/login:
+    post:
+      summary: "Login and get JWT"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LoginRequest" }
+      responses:
+        "200":
+          description: "OK"
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/LoginRequest" }
-        responses:
-          "200":
-            description: "OK"
-            content:
-              application/json:
-                schema: { $ref: "#/components/schemas/LoginResponse" }
+              schema: { $ref: "#/components/schemas/LoginResponse" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /cards:
+    get:
+      summary: "Get list of cards (USER - own cards, ADMIN - all cards)"
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/SizeParam"
+        - in: query
+          name: status
+          schema: { $ref: "#/components/schemas/CardStatus" }
+        - in: query
+          name: last4
+          schema: { type: string, minLength: 4, maxLength: 4 }
+        - in: query
+          name: ownerId
+          description: "ADMIN-only filter"
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CardPage" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+    post:
+      summary: "Create a new card (ADMIN ONLY)"
+      security:
+        - bearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CardRequest" }
+      responses:
+        "201":
+          description: "Created"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CardResponse" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /cards/{id}:
+    get:
+      summary: "Get card details (USER - own card, ADMIN - any card)"
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CardResponse" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+    delete:
+      summary: "Delete a card (ADMIN ONLY)"
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - $ref: "#/components/parameters/CardIdParam"
+      responses:
+        "204":
+          description: "No Content"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /cards/{id}/status:
+    patch:
+      summary: "Update card status (ADMIN ONLY)"
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - $ref: "#/components/parameters/CardIdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ status ]
+              properties:
+                status: { $ref: "#/components/schemas/CardStatus" }
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CardResponse" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /cards/{id}/request-block:
+    post:
+      summary: "Request card block (USER only for own card)"
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - $ref: "#/components/parameters/CardIdParam"
+      responses:
+        "200":
+          description: "OK"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
