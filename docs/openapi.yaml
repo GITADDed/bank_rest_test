@@ -62,9 +62,25 @@ components:
       type: object
       required: [ ownerId, expiryMonth, expiryYear ]
       properties:
-        ownerId: { type: string, format: uuid }
+        ownerId: { type: integer, example: 1 }
         expiryMonth: { type: integer, minimum: 1, maximum: 12 }
         expiryYear: { type: integer, description: "Must not be in the past" }
+
+    UserRequest:
+      type: object
+      required: [ username, password, role ]
+      properties:
+        username: { type: string }
+        password: { type: string, format: password }
+        role: { type: string, enum: [ USER, ADMIN ], default: [USER] }
+
+    UserResponse:
+      type: object
+      required: [ id, username, role ]
+      properties:
+        id: { type: integer, example: 1 }
+        username: { type: string }
+        role: { type: string, enum: [ USER, ADMIN ] }
 
     ErrorResponse:
       type: object
@@ -96,7 +112,13 @@ components:
       in: path
       name: id
       required: true
-      schema: { type: string, format: uuid }
+      schema: { type: integer, minimum: 1, example: 1 }
+
+    UserIdParam:
+      in: path
+      name: id
+      required: true
+      schema: { type: integer, minimum: 1, example: 1 }
 
   responses:
     BadRequest:
@@ -165,7 +187,7 @@ paths:
         - in: query
           name: ownerId
           description: "ADMIN-only filter"
-          schema: { type: string, format: uuid }
+          schema: { type: integer, example: 1, minimum: 1 }
       responses:
         "200":
           description: "OK"
@@ -218,7 +240,7 @@ paths:
         - in: path
           name: id
           required: true
-          schema: { type: string, format: uuid }
+          schema: { type: integer, example: 1, minimum: 1 }
       responses:
         "200":
           description: "OK"
@@ -310,3 +332,102 @@ paths:
         "409":
           $ref: "#/components/responses/Conflict"
 
+  /users:
+    get:
+      summary: "Get list of users (ADMIN ONLY)"
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/SizeParam"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ items, page, size, total ]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/UserResponse" }
+                  page: { type: integer, example: 0 }
+                  size: { type: integer, example: 10 }
+                  total: { type: integer, example: 100 }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    post:
+      summary: "Create a new user ADMIN ONLY"
+      security:
+        - bearerAuth: [ ]
+      requestBody:
+        $ref: "#/components/schemas/UserRequest"
+      responses:
+        "201":
+          description: "Created"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UserResponse" }
+
+  /users/{id}:
+    get:
+      summary: "Get list of users (ADMIN ONLY)"
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - $ref: "#/components/parameters/UserIdParam"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UserResponse" }
+    patch:
+      summary: "Update user role (ADMIN ONLY)"
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - $ref: "#/components/parameters/UserIdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ role ]
+              properties:
+                role: { type: string, enum: [ USER, ADMIN ] }
+      responses:
+        "200":
+            description: "OK"
+            content:
+              application/json:
+                schema: { $ref: "#/components/schemas/UserResponse" }
+    delete:
+      summary: "Delete a user (ADMIN ONLY)"
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - $ref: "#/components/parameters/UserIdParam"
+      responses:
+        "204":
+          description: "No Content"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
