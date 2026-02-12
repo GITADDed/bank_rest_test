@@ -1,6 +1,4 @@
 package com.example.bankcards.dto;
 
-import java.util.UUID;
-
-public record CardRequest(UUID ownerId, Integer expiryMonth, Integer expiryYear) {
+public record CardRequest(Long ownerId, String pan, Integer expiryMonth, Integer expiryYear) {
 }
