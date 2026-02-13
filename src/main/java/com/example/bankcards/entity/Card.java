@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 @Table(name = "cards")
 public class Card {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -28,6 +28,7 @@ public class Card {
     private Integer expiryYear;
 
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     private CardStatus status;
 
     @Column(nullable = false)
