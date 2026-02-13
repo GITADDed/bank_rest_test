@@ -4,6 +4,5 @@ import java.util.List;
 
 public record ErrorResponse(String code,
                             String message,
-                            List<ErrorDetail> details,
-                            String traceId) {
+                            List<ErrorDetail> details) {
 }
