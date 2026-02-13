@@ -1,0 +1,59 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-create-cards
+      author: kahu9
+      objectQuotingStrategy: QUOTE_ONLY_RESERVED_WORDS
+      changes:
+        - createTable:
+            columns:
+              - column:
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_cards
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+              - column:
+                  constraints:
+                    nullable: false
+                  name: owner_id
+                  type: BIGINT
+              - column:
+                  constraints:
+                    nullable: false
+                  name: last4
+                  type: VARCHAR(4)
+              - column:
+                  constraints:
+                    nullable: false
+                  name: expiry_month
+                  type: INT
+              - column:
+                  constraints:
+                    nullable: false
+                  name: expiry_year
+                  type: INT
+              - column:
+                  constraints:
+                    nullable: false
+                  name: status
+                  type: VARCHAR(30)
+              - column:
+                  constraints:
+                    nullable: false
+                  name: balance
+                  type: DECIMAL(19,2)
+            tableName: cards
+        - createIndex:
+            indexName: ix_cards_owner_id
+            columns:
+              - column:
+                  name: owner_id
+            tableName: cards
+        - addForeignKeyConstraint:
+            baseColumnNames: owner_id
+            baseTableName: cards
+            constraintName: FK_CARDS_ON_OWNER
+            referencedColumnNames: id
+            referencedTableName: users
