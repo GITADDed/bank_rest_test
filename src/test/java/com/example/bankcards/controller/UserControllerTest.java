@@ -1,5 +1,9 @@
 package com.example.bankcards.controller;
 
+import com.example.bankcards.dto.UserRequest;
+import com.example.bankcards.entity.Role;
+import jakarta.transaction.Transactional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
@@ -10,6 +14,10 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import tools.jackson.databind.json.JsonMapper;
+
+import java.util.List;
+import java.util.Set;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -17,19 +25,28 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Transactional
 class UserControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
+    private JsonMapper objectMapper;
+
+    private UserRequest request;
+
+    private String validUsername = "user1";
+    private String validPassword = "12345";
+
+    @BeforeEach
+    void setUp() {
+        request = new UserRequest(validUsername, validPassword, Set.of(Role.USER));
+    }
+
     @Test
-    void createUser() throws Exception {
-        String requestJson = """
-                {
-                    "username": "user1",
-                    "password": "12345"
-                }
-                """;
+    void shouldCreateUserWhenCorrectInput() throws Exception {
+        String requestJson = objectMapper.writeValueAsString(request);
         String actualJson = mockMvc.perform(post("/api/v1/users")
                         .content(requestJson)
                         .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
