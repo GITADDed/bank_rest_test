@@ -10,6 +10,8 @@ import com.example.bankcards.repository.UserRepository;
 import com.example.bankcards.util.Violation;
 import com.example.bankcards.validation.validators.RequestValidator;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -17,7 +19,7 @@ import java.util.List;
 
 @RequiredArgsConstructor
 @Service
-public class CreateCardServiceImpl implements CreateCardService {
+public class CardServiceImpl implements CardService {
 
     private final UserRepository userRepository;
     private final CardRepository cardRepository;
@@ -48,5 +50,10 @@ public class CreateCardServiceImpl implements CreateCardService {
                 card.getExpiryYear(),
                 card.getStatus(),
                 card.getBalance());
+    }
+
+    @Override
+    public Page<CardResponse> getAllCards(Pageable pageable) {
+        return cardRepository.findAll(pageable).map(Card::toDTO);
     }
 }

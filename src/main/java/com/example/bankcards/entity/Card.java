@@ -1,5 +1,6 @@
 package com.example.bankcards.entity;
 
+import com.example.bankcards.dto.CardResponse;
 import com.example.bankcards.dto.CardStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -43,5 +44,15 @@ public class Card {
         this.expiryYear = expiryYear;
         this.status = status;
         this.balance = balance;
+    }
+
+    public CardResponse toDTO() {
+        return new CardResponse(id,
+                "**** **** **** " + last4,
+                last4,
+                expiryMonth,
+                expiryYear,
+                status,
+                balance);
     }
 }

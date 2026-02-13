@@ -1,11 +1,15 @@
 package com.example.bankcards.controller;
 
-import com.example.bankcards.BankCardsApplication;
 import com.example.bankcards.dto.CardRequest;
+import com.example.bankcards.dto.CardResponse;
+import com.example.bankcards.dto.CardStatus;
+import com.example.bankcards.entity.Card;
 import com.example.bankcards.entity.Role;
 import com.example.bankcards.entity.User;
+import com.example.bankcards.repository.CardRepository;
 import com.example.bankcards.repository.UserRepository;
 import jakarta.transaction.Transactional;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
@@ -21,9 +25,16 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.http.HttpHeaders;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Set;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -36,6 +47,9 @@ class CardsControllerTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private CardRepository cardRepository;
 
     @Autowired
     private JsonMapper objectMapper;
@@ -56,7 +70,30 @@ class CardsControllerTest {
     }
 
     @Test
-    void getCards() {
+    void shouldGetTenCardsWhenPageZeroAndSizeTen() throws Exception {
+        ArrayList<Card> createdCards = new ArrayList<>();
+        for (int i = 0; i < 20; i++) {
+            createdCards.add(createCard(testUser, 4000 + i + "", validExpiryMonth, validExpiryYear));
+        }
+
+        List<Integer> expectedIds = createdCards.stream()
+                .map(Card::getId)
+                .sorted(Comparator.reverseOrder())
+                .limit(10)
+                .map(Long::intValue)
+                .toList();
+
+        mockMvc.perform(get("/api/v1/cards")
+                        .param("page", "0")
+                        .param("size", "10")
+                        .accept(MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(status().isOk())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.totalElements").value(20))
+                .andExpect(jsonPath("$.items.length()").value(10))
+                .andExpect(jsonPath("$.items[*].id", Matchers.contains(expectedIds.toArray())));
     }
 
     @Test
@@ -193,5 +230,9 @@ class CardsControllerTest {
 
     private User createUser(String username, String passwordHash, Set<Role> roles) {
         return userRepository.save(new User(username, passwordHash, roles));
+    }
+
+    private Card createCard(User owner, String last4, Integer expiryMonth, Integer expiryYear) {
+        return cardRepository.save(new Card(owner, last4, expiryMonth, expiryYear, CardStatus.ACTIVE, BigDecimal.ZERO));
     }
 }
