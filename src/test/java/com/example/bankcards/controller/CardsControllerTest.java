@@ -137,6 +137,35 @@ class CardsControllerTest {
     }
 
     @Test
+    void shouldReturnValidationErrorWhenExpiryYearIsCurrentButMonthInPast() throws Exception {
+        int currentYear = java.time.LocalDate.now().getYear();
+        int pastMonth = java.time.LocalDate.now().getMonthValue() - 1;
+
+        CardRequest request = new CardRequest(testUser.getId(), validPan, pastMonth, currentYear);
+
+        String requestJson = objectMapper.writeValueAsString(request);
+        String actualJson = mockMvc.perform(post("/api/v1/cards")
+                        .content(requestJson)
+                        .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(status().isBadRequest())
+                .andReturn().getResponse().getContentAsString();
+
+        String expectedJson = """
+                {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Validation failed for one or more fields.",
+                    "details": [
+                        {
+                            "field": "expiryMonth",
+                            "message": "Expiry month must be the current month or a future month."
+                        }
+                    ]
+                }
+                """;
+        JSONAssert.assertEquals(expectedJson, actualJson, JSONCompareMode.LENIENT);
+    }
+
+    @Test
     void shouldReturnNotFoundWhenUserDoesNotExist() throws Exception {
         CardRequest request = new CardRequest(999L, validPan, validExpiryMonth, validExpiryYear);
 
