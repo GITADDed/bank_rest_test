@@ -16,6 +16,9 @@ public class ExpiryDateInPastValidationRule implements ValidationRule<CardReques
         if (currentDate.getYear() > request.expiryYear())
             return Optional.of(new Violation("expiryYear", "Expiry year must be the current year or a future year."));
 
+        if (currentDate.getYear() == request.expiryYear() && currentDate.getMonthValue() > request.expiryMonth())
+            return Optional.of(new Violation("expiryMonth", "Expiry month must be the current month or a future month."));
+
         return Optional.empty();
     }
 }
