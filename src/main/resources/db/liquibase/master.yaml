@@ -5,5 +5,3 @@ databaseChangeLog:
       file: db/liquibase/changes/002-cards.yaml
   - include:
       file: db/liquibase/changes/003-user-roles.yaml
-#  - include:
-#      file: db/liquibase/changes/900-test-seed.yaml
