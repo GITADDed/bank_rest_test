@@ -1,7 +1,6 @@
 package com.example.bankcards.controller;
 
 import com.example.bankcards.dto.CardRequest;
-import com.example.bankcards.dto.CardResponse;
 import com.example.bankcards.dto.CardStatus;
 import com.example.bankcards.entity.Card;
 import com.example.bankcards.entity.Role;
@@ -32,8 +31,8 @@ import java.util.List;
 import java.util.Set;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -71,28 +70,29 @@ class CardsControllerTest {
 
     @Test
     void shouldGetTenCardsWhenPageZeroAndSizeTen() throws Exception {
-        ArrayList<Card> createdCards = new ArrayList<>();
-        for (int i = 0; i < 20; i++) {
-            createdCards.add(createCard(testUser, 4000 + i + "", validExpiryMonth, validExpiryYear));
-        }
+        int page = 0;
+        int size = 10;
+        int totalCards = 20;
+
+        ArrayList<Card> createdCards = createCards(testUser, totalCards);
 
         List<Integer> expectedIds = createdCards.stream()
                 .map(Card::getId)
                 .sorted(Comparator.reverseOrder())
-                .limit(10)
+                .limit(size)
                 .map(Long::intValue)
                 .toList();
 
-        mockMvc.perform(get("/api/v1/cards")
-                        .param("page", "0")
-                        .param("size", "10")
+        mockMvc.perform(get("/api/v1/admin/cards")
+                        .param("page", "" + page)
+                        .param("size", "" + size)
                         .accept(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isOk())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.page").value(0))
-                .andExpect(jsonPath("$.size").value(10))
-                .andExpect(jsonPath("$.totalElements").value(20))
-                .andExpect(jsonPath("$.items.length()").value(10))
+                .andExpect(jsonPath("$.page").value(page))
+                .andExpect(jsonPath("$.size").value(size))
+                .andExpect(jsonPath("$.totalElements").value(totalCards))
+                .andExpect(jsonPath("$.items.length()").value(size))
                 .andExpect(jsonPath("$.items[*].id", Matchers.contains(expectedIds.toArray())));
     }
 
@@ -102,7 +102,7 @@ class CardsControllerTest {
 
         String requestJson = objectMapper.writeValueAsString(request);
 
-        String actualJson = mockMvc.perform(post("/api/v1/cards")
+        String actualJson = mockMvc.perform(post("/api/v1/admin/cards")
                         .content(requestJson)
                         .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isOk())
@@ -126,7 +126,7 @@ class CardsControllerTest {
         CardRequest request = new CardRequest(testUser.getId(), invalidPan, validExpiryMonth, validExpiryYear);
 
         String requestJson = objectMapper.writeValueAsString(request);
-        String actualJson = mockMvc.perform(post("/api/v1/cards")
+        String actualJson = mockMvc.perform(post("/api/v1/admin/cards")
                         .content(requestJson)
                         .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isBadRequest())
@@ -148,11 +148,37 @@ class CardsControllerTest {
     }
 
     @Test
+    void shouldReturnValidationErrorWhenPANIsNull() throws Exception {
+        CardRequest request = new CardRequest(testUser.getId(), null, validExpiryMonth, validExpiryYear);
+
+        String requestJson = objectMapper.writeValueAsString(request);
+        String actualJson = mockMvc.perform(post("/api/v1/admin/cards")
+                        .content(requestJson)
+                        .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(status().isBadRequest())
+                .andReturn().getResponse().getContentAsString();
+
+        String expectedJson = """
+                {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Validation failed for one or more fields.",
+                    "details": [
+                        {
+                            "field": "pan",
+                            "message": "PAN must be not null or empty."
+                        }
+                    ]
+                }
+                """;
+        JSONAssert.assertEquals(expectedJson, actualJson, JSONCompareMode.LENIENT);
+    }
+
+    @Test
     void shouldReturnValidationErrorWhenExpiryDateInPast() throws Exception {
         CardRequest request = new CardRequest(testUser.getId(), validPan, validExpiryMonth, pastExpiryYear);
 
         String requestJson = objectMapper.writeValueAsString(request);
-        String actualJson = mockMvc.perform(post("/api/v1/cards")
+        String actualJson = mockMvc.perform(post("/api/v1/admin/cards")
                         .content(requestJson)
                         .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isBadRequest())
@@ -181,7 +207,7 @@ class CardsControllerTest {
         CardRequest request = new CardRequest(testUser.getId(), validPan, pastMonth, currentYear);
 
         String requestJson = objectMapper.writeValueAsString(request);
-        String actualJson = mockMvc.perform(post("/api/v1/cards")
+        String actualJson = mockMvc.perform(post("/api/v1/admin/cards")
                         .content(requestJson)
                         .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isBadRequest())
@@ -207,7 +233,7 @@ class CardsControllerTest {
         CardRequest request = new CardRequest(999L, validPan, validExpiryMonth, validExpiryYear);
 
         String requestJson = objectMapper.writeValueAsString(request);
-        String actualJson = mockMvc.perform(post("/api/v1/cards")
+        String actualJson = mockMvc.perform(post("/api/v1/admin/cards")
                         .content(requestJson)
                         .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isNotFound())
@@ -228,11 +254,136 @@ class CardsControllerTest {
         JSONAssert.assertEquals(expectedJson, actualJson, JSONCompareMode.LENIENT);
     }
 
+    @Test
+    void shouldReturnValidationErrorWhenExpiryMonthIsInvalid() throws Exception {
+        CardRequest request = new CardRequest(testUser.getId(), validPan, invalidExpiryMonth, validExpiryYear);
+
+        String requestJson = objectMapper.writeValueAsString(request);
+        String actualJson = mockMvc.perform(post("/api/v1/admin/cards")
+                        .content(requestJson)
+                        .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(status().isBadRequest())
+                .andReturn().getResponse().getContentAsString();
+
+        String expectedJson = """
+                {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Validation failed for one or more fields.",
+                    "details": [
+                        {
+                            "field": "expiryMonth",
+                            "message": "Expiry month must be between 1 and 12."
+                        }
+                    ]
+                }
+                """;
+        JSONAssert.assertEquals(expectedJson, actualJson, JSONCompareMode.LENIENT);
+    }
+
+    @Test
+    void shouldReturnValidationErrorWhenExpiryYearIsNegative() throws Exception {
+        CardRequest request = new CardRequest(testUser.getId(), validPan, validExpiryMonth, -1);
+
+        String requestJson = objectMapper.writeValueAsString(request);
+        String actualJson = mockMvc.perform(post("/api/v1/admin/cards")
+                        .content(requestJson)
+                        .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(status().isBadRequest())
+                .andReturn().getResponse().getContentAsString();
+
+        String expectedJson = """
+                {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Validation failed for one or more fields.",
+                    "details": [
+                        {
+                            "field": "expiryYear",
+                            "message": "Expiry year must be positive."
+                        }
+                    ]
+                }
+                """;
+        JSONAssert.assertEquals(expectedJson, actualJson, JSONCompareMode.LENIENT);
+    }
+
+    @Test
+    void shouldReturnUserCardsWhenRequestUserCards() throws Exception {
+        int page = 0;
+        int size = 10;
+        int totalCards = 5;
+
+        User otherUser = createUser("otheruser", "hashedpassword", Set.of(Role.USER));
+
+        ArrayList<Card> createdCardsForTestUser = createCards(testUser, totalCards);
+        ArrayList<Card> createdCardsForOtherUser = createCards(otherUser, totalCards);
+        ArrayList<Card> createdCards = new ArrayList<>();
+
+        createdCards.addAll(createdCardsForTestUser);
+        createdCards.addAll(createdCardsForOtherUser);
+
+        List<Integer> expectedIds = createdCardsForTestUser.stream()
+                .map(Card::getId)
+                .sorted(Comparator.reverseOrder())
+                .map(Long::intValue)
+                .toList();
+
+        List<Integer> unexpectedIds = createdCardsForOtherUser.stream()
+                .map(Card::getId)
+                .sorted(Comparator.reverseOrder())
+                .map(Long::intValue)
+                .toList();
+
+        mockMvc.perform(get("/api/v1/cards")
+                        .header("X-User-Id", testUser.getId().toString())
+                        .param("page", "" + page)
+                        .param("size", "" + size)
+                        .accept(MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.page").value(page))
+                .andExpect(jsonPath("$.size").value(size))
+                .andExpect(jsonPath("$.totalElements").value(totalCards))
+                .andExpect(jsonPath("$.items.length()").value(totalCards))
+                .andExpect(jsonPath("$.items[*].id", Matchers.contains(expectedIds.toArray())))
+                .andExpect(jsonPath("$.items[*].id", Matchers.not(Matchers.contains(unexpectedIds.toArray()))));
+    }
+
+    @Test
+    void shouldReturnCardWithChangedStatusWhenUpdateCardStatus() throws Exception {
+        Card card = createCard(testUser, "1234", validExpiryMonth, validExpiryYear);
+
+        String actualJson = mockMvc.perform(patch("/api/v1/admin/cards/" + card.getId() + "/status")
+                        .content(objectMapper.writeValueAsString(CardStatus.INACTIVE))
+                        .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        String expectedJson = """
+                {
+                    "id": %d,
+                    "maskedPan": "**** **** **** 1234",
+                    "last4": "1234",
+                    "expiryMonth": 10,
+                    "expiryYear": 2028,
+                    "status": "INACTIVE",
+                    "balance": 0.00
+                }
+                """.formatted(card.getId());
+        JSONAssert.assertEquals(expectedJson, actualJson, JSONCompareMode.LENIENT);
+    }
+
     private User createUser(String username, String passwordHash, Set<Role> roles) {
         return userRepository.save(new User(username, passwordHash, roles));
     }
 
     private Card createCard(User owner, String last4, Integer expiryMonth, Integer expiryYear) {
         return cardRepository.save(new Card(owner, last4, expiryMonth, expiryYear, CardStatus.ACTIVE, BigDecimal.ZERO));
+    }
+
+    private ArrayList<Card> createCards(User owner, int count) {
+        ArrayList<Card> cards = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            cards.add(createCard(owner, 1000 + i + "", validExpiryMonth, validExpiryYear));
+        }
+        return cards;
     }
 }
