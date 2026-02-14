@@ -4,6 +4,7 @@ import com.example.bankcards.dto.CardResponse;
 import com.example.bankcards.dto.CardStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 
@@ -28,6 +29,7 @@ public class Card {
     @Column(name = "expiry_year", nullable = false)
     private Integer expiryYear;
 
+    @Setter
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private CardStatus status;
