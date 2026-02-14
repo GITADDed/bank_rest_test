@@ -2,6 +2,7 @@ package com.example.bankcards.controller;
 
 import com.example.bankcards.dto.CardRequest;
 import com.example.bankcards.dto.CardResponse;
+import com.example.bankcards.dto.CardStatus;
 import com.example.bankcards.dto.PageResponse;
 import com.example.bankcards.service.CardService;
 import lombok.AccessLevel;
@@ -14,16 +15,25 @@ import org.springframework.web.bind.annotation.*;
 
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 @RestController
-@RequestMapping("/cards")
 public class CardsController {
 
     private final CardService cardService;
 
-    @GetMapping
+    @GetMapping("/admin/cards")
     PageResponse<CardResponse> getAllCards(
             @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.DESC)
             Pageable pageable) {
         Page<CardResponse> page = cardService.getAllCards(pageable);
+
+        return new PageResponse<>(page.getContent(), page.getNumber(), page.getSize(),
+                page.getTotalElements(), page.getTotalPages());
+    }
+
+    @GetMapping("/cards")
+    PageResponse<CardResponse> getMyAllCards(@RequestHeader("X-User-Id") Long userId,
+            @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.DESC)
+            Pageable pageable) {
+        Page<CardResponse> page = cardService.getMyAllCards(userId, pageable);
 
         return new PageResponse<>(page.getContent(), page.getNumber(), page.getSize(),
                 page.getTotalElements(), page.getTotalPages());
@@ -34,8 +44,13 @@ public class CardsController {
         return cardService.getCardById(id);
     }
 
-    @PostMapping
+    @PostMapping("/admin/cards")
     CardResponse createCard(@RequestBody CardRequest request) {
         return cardService.createCard(request);
+    }
+
+    @PatchMapping("/admin/cards/{id}/status")
+    CardResponse updateCardStatus(@PathVariable Long id, @RequestBody CardStatus status) {
+        return cardService.updateCardStatus(id, status);
     }
 }
