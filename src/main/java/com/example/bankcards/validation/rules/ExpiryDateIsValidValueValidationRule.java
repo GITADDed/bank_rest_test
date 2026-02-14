@@ -7,15 +7,16 @@ import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
-@Order(0)
+@Order(1)
 @Component
-public class PANNullEmptyValidationRule implements ValidationRule<CardRequest> {
+public class ExpiryDateIsValidValueValidationRule implements ValidationRule<CardRequest> {
     @Override
     public Optional<Violation> applyRule(CardRequest request) {
-        String pan = request.pan();
+        if (request.expiryMonth() < 1 || request.expiryMonth() > 12)
+            return Optional.of(new Violation("expiryMonth", "Expiry month must be between 1 and 12."));
 
-        if (pan == null || pan.isEmpty())
-            return Optional.of(new Violation("pan", "PAN must be not null or empty."));
+        if (request.expiryYear() < 0)
+            return Optional.of(new Violation("expiryYear", "Expiry year must be positive."));
 
         return Optional.empty();
     }

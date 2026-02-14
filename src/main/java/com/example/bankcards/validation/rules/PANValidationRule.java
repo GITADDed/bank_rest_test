@@ -3,20 +3,18 @@ package com.example.bankcards.validation.rules;
 import com.example.bankcards.dto.CardRequest;
 import com.example.bankcards.util.Violation;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
+@Order(3)
 @Component
 public class PANValidationRule implements ValidationRule<CardRequest> {
 
     @Override
     public Optional<Violation> applyRule(CardRequest request) {
         String pan = request.pan();
-
-        // Because check for null and empty in another rule.
-        if (pan == null || pan.isEmpty())
-            return Optional.empty();
 
         boolean isOnlyDigits = StringUtils.isNumeric(pan);
         int length = pan.length();
