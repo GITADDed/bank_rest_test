@@ -56,4 +56,11 @@ public class CardServiceImpl implements CardService {
     public Page<CardResponse> getAllCards(Pageable pageable) {
         return cardRepository.findAll(pageable).map(Card::toDTO);
     }
+
+    @Override
+    public CardResponse getCardById(Long id) {
+        return cardRepository.findById(id).orElseThrow(() -> new NotFoundException(
+                List.of(new Violation("id", "Card with id " + id + " not found."))
+        )).toDTO();
+    }
 }

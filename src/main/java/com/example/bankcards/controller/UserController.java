@@ -9,16 +9,16 @@ import org.springframework.web.bind.annotation.*;
 
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/users")
 public class UserController {
     private final UserService userService;
 
-    @PostMapping("/users")
+    @PostMapping
     public UserResponse createUser(@RequestBody UserRequest request) {
         return userService.createUser(request);
     }
 
-    @GetMapping("/users")
+    @GetMapping
     public UserResponse getUserList() {
         return new UserResponse(1L, "user1", null);
     }

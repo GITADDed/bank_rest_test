@@ -8,4 +8,5 @@ import org.springframework.data.domain.Pageable;
 public interface CardService {
     CardResponse createCard(CardRequest request);
     Page<CardResponse> getAllCards(Pageable pageable);
+    CardResponse getCardById(Long id);
 }

@@ -14,12 +14,12 @@ import org.springframework.web.bind.annotation.*;
 
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/cards")
 public class CardsController {
 
     private final CardService cardService;
 
-    @GetMapping("/cards")
+    @GetMapping
     PageResponse<CardResponse> getAllCards(
             @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.DESC)
             Pageable pageable) {
@@ -29,7 +29,12 @@ public class CardsController {
                 page.getTotalElements(), page.getTotalPages());
     }
 
-    @PostMapping("/cards")
+    @GetMapping("/{id}")
+    CardResponse getCardById(@PathVariable Long id) {
+        return cardService.getCardById(id);
+    }
+
+    @PostMapping
     CardResponse createCard(@RequestBody CardRequest request) {
         return cardService.createCard(request);
     }
