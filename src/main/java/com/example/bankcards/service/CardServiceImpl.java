@@ -4,6 +4,8 @@ import com.example.bankcards.dto.CardRequest;
 import com.example.bankcards.dto.CardResponse;
 import com.example.bankcards.dto.CardStatus;
 import com.example.bankcards.entity.Card;
+import com.example.bankcards.entity.Role;
+import com.example.bankcards.entity.User;
 import com.example.bankcards.exception.NotFoundException;
 import com.example.bankcards.repository.CardRepository;
 import com.example.bankcards.repository.UserRepository;
@@ -32,8 +34,9 @@ public class CardServiceImpl implements CardService {
         Card card = new Card(
                 userRepository.findById(
                         request.ownerId()).orElseThrow(() -> new NotFoundException(
-                                List.of(new Violation("ownerId", "User with id " + request.ownerId() + " not found."))
-                        )),
+                        List.of(new Violation("ownerId", "User with id "
+                                + request.ownerId() + " not found."))
+                )),
                 last4,
                 request.expiryMonth(),
                 request.expiryYear(),
@@ -58,9 +61,33 @@ public class CardServiceImpl implements CardService {
     }
 
     @Override
+    public Page<CardResponse> getMyAllCards(Long ownerId, Pageable pageable) {
+        User user = userRepository.findById(ownerId).orElseThrow(() -> new NotFoundException(
+                List.of(new Violation("ownerId", "User with id " + ownerId + " not found."))
+        ));
+
+        Page<Card> page = cardRepository.findAllByOwner(user, pageable);
+
+        return page.map(Card::toDTO);
+    }
+
+    @Override
     public CardResponse getCardById(Long id) {
         return cardRepository.findById(id).orElseThrow(() -> new NotFoundException(
                 List.of(new Violation("id", "Card with id " + id + " not found."))
         )).toDTO();
+    }
+
+    @Override
+    public CardResponse updateCardStatus(Long id, CardStatus status) {
+        Card card = cardRepository.findById(id).orElseThrow(() -> new NotFoundException(
+                List.of(new Violation("id", "Card with id " + id + " not found."))
+        ));
+
+        if (card.getStatus() == status)
+            return card.toDTO();
+
+        card.setStatus(status);
+        return cardRepository.save(card).toDTO();
     }
 }
