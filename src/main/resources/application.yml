@@ -14,3 +14,8 @@ spring:
     hibernate:
       ddl-auto: validate
     show-sql: false
+
+security:
+  jwt:
+    secret: "5c02ee9d2efea5e6782c1cfa49ec2d86bc92ef70d60036801879a77c922e3cc0"
+    ttl-minutes: 60
