@@ -3,12 +3,11 @@ package com.example.bankcards.exception;
 import com.example.bankcards.dto.ErrorDetail;
 import com.example.bankcards.dto.ErrorResponse;
 import com.example.bankcards.util.ResponseBuilder;
-import jakarta.servlet.http.HttpServletRequest;
+import jakarta.persistence.OptimisticLockException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.List;
@@ -64,6 +63,16 @@ public class ApiExceptionHandler {
     public ResponseEntity<ErrorResponse> handleUnauthorizedException(UnauthorizedException ex) {
         var body = fromExceptionToErrorResponse(ex);
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
+    }
+
+    @ExceptionHandler(OptimisticLockException.class)
+    public ResponseEntity<ErrorResponse> handleOptimisticLockException() {
+        var body = ResponseBuilder.buildErrorResponse(
+                "CONFLICT_ERROR",
+                "Conflict occurred due to concurrent modification.",
+                List.of(new ErrorDetail("version", "The resource was modified by another process. Please refresh and try again."))
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }
 
     private ErrorResponse fromExceptionToErrorResponse(BaseException ex) {

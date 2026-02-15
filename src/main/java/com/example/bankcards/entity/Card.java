@@ -4,7 +4,6 @@ import com.example.bankcards.dto.CardResponse;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.SQLDelete;
 
 import java.math.BigDecimal;
 
@@ -41,6 +40,9 @@ public class Card {
     @Setter
     @Column(nullable = false)
     private Boolean deleted = false;
+
+    @Version
+    private Long version = 0L;
 
     protected Card() {}
 

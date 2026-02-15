@@ -50,6 +50,12 @@ databaseChangeLog:
                   name: deleted
                   type: BIT(1)
                   defaultValue: false
+              - column:
+                  constraints:
+                    nullable: false
+                    name: version
+                    type: BIGINT
+                    defaultValue: 0
             tableName: cards
         - createIndex:
             indexName: ix_cards_owner_id
