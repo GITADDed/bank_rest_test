@@ -1,7 +1,7 @@
 package com.example.bankcards.validation.rules;
 
 import com.example.bankcards.dto.CardRequest;
-import com.example.bankcards.util.Violation;
+import com.example.bankcards.entity.Violation;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 

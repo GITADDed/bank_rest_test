@@ -1,6 +1,6 @@
 package com.example.bankcards.validation.rules;
 
-import com.example.bankcards.util.Violation;
+import com.example.bankcards.entity.Violation;
 
 import java.util.Optional;
 
