@@ -11,6 +11,7 @@ public interface CardService {
     Page<CardResponse> getAllCards(Pageable pageable);
     Page<CardResponse> getMyAllCards(Long ownerId, Pageable pageable);
     CardResponse getCardById(Long id);
+    CardResponse getCardById(Long id, Long userId);
     CardResponse updateCardStatus(Long id, CardStatus status);
     void deleteCard(Long id);
 }

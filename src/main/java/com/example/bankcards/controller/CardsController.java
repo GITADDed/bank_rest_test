@@ -3,8 +3,8 @@ package com.example.bankcards.controller;
 import com.example.bankcards.dto.CardRequest;
 import com.example.bankcards.dto.CardResponse;
 import com.example.bankcards.dto.UpdateStatusRequest;
-import com.example.bankcards.entity.CardStatus;
 import com.example.bankcards.dto.PageResponse;
+import com.example.bankcards.exception.UnauthorizedException;
 import com.example.bankcards.service.CardService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -14,6 +14,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
@@ -33,9 +35,14 @@ public class CardsController {
     }
 
     @GetMapping("/cards")
-    PageResponse<CardResponse> getMyAllCards(@RequestHeader("X-User-Id") Long userId,
-            @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.DESC)
+    PageResponse<CardResponse> getMyAllCards(@AuthenticationPrincipal Jwt jwt,
+                                             @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.DESC)
             Pageable pageable) {
+        Long userId = jwt.getClaim("uid");
+
+        if (userId == null)
+            throw new UnauthorizedException();
+
         Page<CardResponse> page = cardService.getMyAllCards(userId, pageable);
 
         return new PageResponse<>(page.getContent(), page.getNumber(), page.getSize(),
@@ -43,8 +50,13 @@ public class CardsController {
     }
 
     @GetMapping("/cards/{id}")
-    CardResponse getCardById(@PathVariable Long id) {
-        return cardService.getCardById(id);
+    CardResponse getCardById(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt) {
+        Long userId = jwt.getClaim("uid");
+
+        if (userId == null)
+            throw new UnauthorizedException();
+
+        return cardService.getCardById(id, userId);
     }
 
     @GetMapping("/admin/cards/{id}")

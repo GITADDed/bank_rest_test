@@ -1,4 +1,4 @@
-package com.example.bankcards.validation.rules;
+package com.example.bankcards.validation.rules.request;
 
 import com.example.bankcards.dto.CardRequest;
 import com.example.bankcards.entity.Violation;
@@ -10,7 +10,7 @@ import java.util.Optional;
 
 @Order(3)
 @Component
-public class PANValidationRule implements ValidationRule<CardRequest> {
+public class PANValidationRule implements Rule<CardRequest> {
 
     @Override
     public Optional<Violation> applyRule(CardRequest request) {

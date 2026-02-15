@@ -10,7 +10,7 @@ import com.example.bankcards.exception.NotFoundException;
 import com.example.bankcards.repository.CardRepository;
 import com.example.bankcards.repository.UserRepository;
 import com.example.bankcards.entity.Violation;
-import com.example.bankcards.validation.validators.RequestValidator;
+import com.example.bankcards.validation.validators.request.RequestValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -74,6 +74,13 @@ public class CardServiceImpl implements CardService {
     @Override
     public CardResponse getCardById(Long id) {
         return cardRepository.findById(id).orElseThrow(() -> new NotFoundException(
+                List.of(new Violation("id", "Card with id " + id + " not found."))
+        )).toDTO();
+    }
+
+    @Override
+    public CardResponse getCardById(Long id, Long userId) {
+        return cardRepository.findByIdAndOwnerIdAndDeletedFalse(id, userId).orElseThrow(() -> new NotFoundException(
                 List.of(new Violation("id", "Card with id " + id + " not found."))
         )).toDTO();
     }
