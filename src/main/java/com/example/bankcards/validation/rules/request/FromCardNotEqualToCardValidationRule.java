@@ -1,4 +1,4 @@
-package com.example.bankcards.validation.rules;
+package com.example.bankcards.validation.rules.request;
 
 import com.example.bankcards.dto.TransferRequest;
 import com.example.bankcards.entity.Violation;
@@ -9,7 +9,7 @@ import java.util.Optional;
 
 @Order(1)
 @Component
-public class FromCardNotEqualToCardValidationRule implements ValidationRule<TransferRequest> {
+public class FromCardNotEqualToCardValidationRule implements Rule<TransferRequest> {
     @Override
     public Optional<Violation> applyRule(TransferRequest request) {
             if (request.fromCardId().equals(request.toCardId())) {

@@ -2,45 +2,42 @@ package com.example.bankcards.service;
 
 import com.example.bankcards.dto.TransferRequest;
 import com.example.bankcards.dto.TransferResponse;
-import com.example.bankcards.entity.Card;
-import com.example.bankcards.entity.Transfer;
-import com.example.bankcards.entity.TransferStatus;
-import com.example.bankcards.entity.Violation;
-import com.example.bankcards.exception.ForbiddenException;
-import com.example.bankcards.exception.NotFoundException;
-import com.example.bankcards.repository.CardRepository;
+import com.example.bankcards.entity.*;
+import com.example.bankcards.exception.ConflictException;
 import com.example.bankcards.repository.TransferRepository;
-import com.example.bankcards.validation.validators.RequestValidator;
-import jakarta.transaction.Transactional;
+import com.example.bankcards.validation.validators.business.TransferValidator;
+import com.example.bankcards.validation.validators.request.RequestValidator;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @RequiredArgsConstructor
 @Service
 public class TransferServiceImpl implements TransferService {
 
-    private final CardRepository cardRepository;
     private final TransferRepository transferRepository;
     private final RequestValidator<TransferRequest> requestValidator;
+    private final TransferValidator transferValidator;
+    private final CardAccessService cardAccessService;
+    private final CardStatusService cardStatusService;
 
     @Transactional
     @Override
-    public TransferResponse transfer(TransferRequest request) {
+    public TransferResponse transfer(TransferRequest request, Long userId) {
         requestValidator.validate(request);
 
-        Card from = cardRepository.findByIdAndDeletedFalse(request.fromCardId()).orElseThrow(() -> new NotFoundException(
-                List.of(new Violation("fromCardId", "Card with id " + request.fromCardId() + " not found."))
-        ));
-        Card to = cardRepository.findByIdAndDeletedFalse(request.fromCardId()).orElseThrow(() -> new NotFoundException(
-                List.of(new Violation("toCardId", "Card with id " + request.toCardId() + " not found."))
-        ));
 
-        if (!from.getOwner().equals(to.getOwner())) {
-            throw new ForbiddenException(
-                    List.of(new Violation("toCardId", "Cannot transfer to other user's card."))
-            );
+        Card from = cardAccessService.getOwnedCardOrThrow(request.fromCardId(), userId, "fromCardId");
+        Card to = cardAccessService.getOwnedCardOrThrow(request.toCardId(), userId, "toCardId");
+
+        TransferCheckResult result = transferValidator.validate(new TransferData(from, to, request));
+
+        for (Long cardId : result.expiredCardIdsToMark()) {
+            cardStatusService.markExpired(cardId);
+        }
+
+        if (!result.violations().isEmpty()) {
+            throw new ConflictException(result.violations());
         }
 
         from.setBalance(from.getBalance().subtract(request.amount()));

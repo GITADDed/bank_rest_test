@@ -1,4 +1,4 @@
-package com.example.bankcards.validation.rules;
+package com.example.bankcards.validation.rules.request;
 
 import com.example.bankcards.dto.CardRequest;
 import com.example.bankcards.entity.Violation;
@@ -10,7 +10,7 @@ import java.util.Optional;
 
 @Order(2)
 @Component
-public class ExpiryDateInPastValidationRule implements ValidationRule<CardRequest> {
+public class ExpiryDateInPastValidationRule implements Rule<CardRequest> {
     @Override
     public Optional<Violation> applyRule(CardRequest request) {
         LocalDate currentDate = LocalDate.now();
