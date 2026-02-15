@@ -97,6 +97,14 @@ components:
               issue: { type: string }
         traceId: { type: string }
 
+    TransferRequest:
+      type: object
+      required: [ fromCardId, toCardId, amount ]
+      properties:
+        fromCardId: { type: integer, minimum: 1 }
+        toCardId: { type: integer, minimum: 1 }
+        amount: { type: number, format: decimal, minimum: 0.01 }
+
   parameters:
     PageParam:
       in: query
@@ -421,6 +429,30 @@ paths:
       responses:
         "204":
           description: "No Content"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /transfers:
+    post:
+      summary: "Transfer money between cards (USER only for own cards)"
+      security:
+        - bearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TransferRequest" }
+      responses:
+        "200":
+          description: "OK"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":

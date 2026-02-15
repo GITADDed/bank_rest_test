@@ -116,5 +116,3 @@
 
 **Then**
 - Error response status = 404
-
-
