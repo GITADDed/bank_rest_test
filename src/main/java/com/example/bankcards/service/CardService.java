@@ -2,7 +2,7 @@ package com.example.bankcards.service;
 
 import com.example.bankcards.dto.CardRequest;
 import com.example.bankcards.dto.CardResponse;
-import com.example.bankcards.dto.CardStatus;
+import com.example.bankcards.entity.CardStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -12,4 +12,5 @@ public interface CardService {
     Page<CardResponse> getMyAllCards(Long ownerId, Pageable pageable);
     CardResponse getCardById(Long id);
     CardResponse updateCardStatus(Long id, CardStatus status);
+    void deleteCard(Long id);
 }

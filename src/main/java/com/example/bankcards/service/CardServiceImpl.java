@@ -2,14 +2,14 @@ package com.example.bankcards.service;
 
 import com.example.bankcards.dto.CardRequest;
 import com.example.bankcards.dto.CardResponse;
-import com.example.bankcards.dto.CardStatus;
+import com.example.bankcards.entity.CardStatus;
 import com.example.bankcards.entity.Card;
-import com.example.bankcards.entity.Role;
 import com.example.bankcards.entity.User;
+import com.example.bankcards.exception.ConflictException;
 import com.example.bankcards.exception.NotFoundException;
 import com.example.bankcards.repository.CardRepository;
 import com.example.bankcards.repository.UserRepository;
-import com.example.bankcards.util.Violation;
+import com.example.bankcards.entity.Violation;
 import com.example.bankcards.validation.validators.RequestValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -66,7 +66,7 @@ public class CardServiceImpl implements CardService {
                 List.of(new Violation("ownerId", "User with id " + ownerId + " not found."))
         ));
 
-        Page<Card> page = cardRepository.findAllByOwner(user, pageable);
+        Page<Card> page = cardRepository.findAllByOwnerAndDeletedFalse(user, pageable);
 
         return page.map(Card::toDTO);
     }
@@ -79,15 +79,27 @@ public class CardServiceImpl implements CardService {
     }
 
     @Override
-    public CardResponse updateCardStatus(Long id, CardStatus status) {
+    public CardResponse updateCardStatus(Long id, CardStatus newStatus) {
         Card card = cardRepository.findById(id).orElseThrow(() -> new NotFoundException(
                 List.of(new Violation("id", "Card with id " + id + " not found."))
         ));
 
-        if (card.getStatus() == status)
-            return card.toDTO();
+        if (!card.getStatus().canTransitionTo(newStatus)) {
+            throw new ConflictException(List.of(), "Cannot change status from "
+                    + card.getStatus() + " to " + newStatus + ".", "INVALID_STATUS_TRANSITION");
+        }
 
-        card.setStatus(status);
+        card.setStatus(newStatus);
         return cardRepository.save(card).toDTO();
+    }
+
+    @Override
+    public void deleteCard(Long id) {
+        Card card = cardRepository.findById(id).orElseThrow(() -> new NotFoundException(
+                List.of(new Violation("id", "Card with id " + id + " not found."))
+        ));
+
+        card.setDeleted(true);
+        cardRepository.save(card);
     }
 }

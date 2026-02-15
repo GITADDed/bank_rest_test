@@ -2,7 +2,7 @@ package com.example.bankcards.validation.validators;
 
 import com.example.bankcards.dto.CardRequest;
 import com.example.bankcards.exception.ValidationException;
-import com.example.bankcards.util.Violation;
+import com.example.bankcards.entity.Violation;
 import com.example.bankcards.validation.rules.ValidationRule;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

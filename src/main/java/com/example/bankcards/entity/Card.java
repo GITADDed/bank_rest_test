@@ -1,10 +1,10 @@
 package com.example.bankcards.entity;
 
 import com.example.bankcards.dto.CardResponse;
-import com.example.bankcards.dto.CardStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.SQLDelete;
 
 import java.math.BigDecimal;
 
@@ -36,6 +36,10 @@ public class Card {
 
     @Column(nullable = false)
     private BigDecimal balance;
+
+    @Setter
+    @Column(nullable = false)
+    private Boolean deleted = false;
 
     protected Card() {}
 
