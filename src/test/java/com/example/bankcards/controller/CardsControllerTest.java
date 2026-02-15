@@ -341,7 +341,6 @@ class CardsControllerTest {
                         .param("size", "" + size)
                         .accept(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isOk())
-                .andDo(print())
                 .andExpect(jsonPath("$.page").value(page))
                 .andExpect(jsonPath("$.size").value(size))
                 .andExpect(jsonPath("$.totalElements").value(totalCards))
