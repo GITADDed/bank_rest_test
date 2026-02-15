@@ -15,26 +15,31 @@ import java.util.List;
 public class ApiExceptionHandler {
     @ExceptionHandler(ValidationException.class)
     public ResponseEntity<ErrorResponse> handleValidation(ValidationException ex, HttpServletRequest req) {
-        List<ErrorDetail> details = ex.getViolations().stream()
-                .map(v -> new ErrorDetail(v.field(), v.message()))
-                .toList();
-
-        var body = ResponseBuilder.buildErrorResponse(ex.getCode(), ex.getMessage(), details);
+        var body = fromExceptionToErrorResponse(ex);
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(NotFoundException ex, HttpServletRequest req) {
-        List<ErrorDetail> details = ex.getViolations().stream()
-                .map(v -> new ErrorDetail(v.field(), v.message()))
-                .toList();
-
-        var body = ResponseBuilder.buildErrorResponse(ex.getCode(), ex.getMessage(), details);
+        var body = fromExceptionToErrorResponse(ex);
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
     }
 
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ErrorResponse> handleAny(ConflictException ex, HttpServletRequest req) {
+        var body = fromExceptionToErrorResponse(ex);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+    }
+
+    private ErrorResponse fromExceptionToErrorResponse(BaseException ex) {
+        List<ErrorDetail> details = ex.getViolations().stream()
+                .map(v -> new ErrorDetail(v.field(), v.message()))
+                .toList();
+
+        return ResponseBuilder.buildErrorResponse(ex.getCode(), ex.getMessage(), details);
+    }
 //    @ExceptionHandler(Exception.class)
 //    public ResponseEntity<ApiError> handleAny(Exception ex, HttpServletRequest req) {
 //        var body = new ApiError(

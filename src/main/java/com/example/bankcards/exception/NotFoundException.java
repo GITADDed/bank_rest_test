@@ -1,17 +1,13 @@
 package com.example.bankcards.exception;
 
-import com.example.bankcards.util.Violation;
+import com.example.bankcards.entity.Violation;
 import lombok.Getter;
 
 import java.util.List;
 
 @Getter
-public class NotFoundException extends RuntimeException {
-    private final String code = "NOT_FOUND_ERROR";
-    private final List<Violation> violations;
-
+public class NotFoundException extends BaseException {
     public NotFoundException(List<Violation> violations) {
-        super("Not found some resource.");
-        this.violations = violations;
+        super("NOT_FOUND_ERROR", violations, "Not found some resource.");
     }
 }
