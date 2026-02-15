@@ -44,6 +44,12 @@ databaseChangeLog:
                     nullable: false
                   name: balance
                   type: DECIMAL(19,2)
+              - column:
+                  constraints:
+                    nullable: false
+                  name: deleted
+                  type: BIT(1)
+                  defaultValue: false
             tableName: cards
         - createIndex:
             indexName: ix_cards_owner_id
