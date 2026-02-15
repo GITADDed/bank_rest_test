@@ -4,26 +4,27 @@ import com.example.bankcards.dto.UserRequest;
 import com.example.bankcards.entity.Role;
 import com.example.bankcards.entity.User;
 import com.example.bankcards.repository.UserRepository;
-import jakarta.transaction.Transactional;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.util.*;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -44,6 +45,8 @@ class UserControllerTest {
 
     private UserRequest request;
 
+    private User adminUser;
+
     private String validUsername = "user1";
     private String validPassword = "12345";
 
@@ -53,6 +56,7 @@ class UserControllerTest {
 
     @BeforeEach
     void setUp() {
+        adminUser = createUser("admin", "admin123", Set.of(Role.ADMIN));
         request = new UserRequest(validUsername, validPassword, Set.of(Role.USER));
     }
 
@@ -60,6 +64,7 @@ class UserControllerTest {
     void shouldCreateUserWhenCorrectInput() throws Exception {
         String requestJson = objectMapper.writeValueAsString(request);
         String actualJson = mockMvc.perform(post("/api/v1/admin/users")
+                        .with(asAdmin())
                         .content(requestJson)
                         .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isOk())
@@ -78,19 +83,22 @@ class UserControllerTest {
     void shouldReturnPageOfUsersWhenCorrectInput() throws Exception {
         List<User> createdUsers = createUsers(totalUsers);
 
+        createdUsers.add(adminUser); // add admin user created in setUp() to the list of expected users
+
         List<String> expectedUsernames = createdUsers.stream()
                 .map(User::getUsername)
                 .sorted(Comparator.reverseOrder()).toList();
 
         mockMvc.perform(get("/api/v1/admin/users")
+                        .with(asAdmin())
                         .param("page", "" + page)
                         .param("size", "" + size)
                         .accept(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.page").value(page))
                 .andExpect(jsonPath("$.size").value(size))
-                .andExpect(jsonPath("$.totalElements").value(totalUsers))
-                .andExpect(jsonPath("$.items.length()").value(totalUsers))
+                .andExpect(jsonPath("$.totalElements").value(totalUsers + 1)) // +1 because of admin user created in setUp()
+                .andExpect(jsonPath("$.items.length()").value(totalUsers + 1)) // +1 because of admin user created in setUp()
                 .andExpect(jsonPath("$.items[*].username", Matchers.contains(expectedUsernames.toArray())));
     }
 
@@ -99,6 +107,7 @@ class UserControllerTest {
         User createdUser = createUser(validUsername, validPassword, Set.of(Role.USER));
 
         String actualJson = mockMvc.perform(get("/api/v1/admin/users/{id}", createdUser.getId())
+                        .with(asAdmin())
                         .accept(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -115,6 +124,7 @@ class UserControllerTest {
     @Test
     void shouldReturnNotFoundWhenUserDoesNotExist() throws Exception {
         mockMvc.perform(get("/api/v1/admin/users/{id}", 999L)
+                        .with(asAdmin())
                         .accept(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.details[0].field").value("id"))
@@ -132,6 +142,7 @@ class UserControllerTest {
                 """;
 
         String actualJson = mockMvc.perform(patch("/api/v1/admin/users/{id}/roles", createdUser.getId())
+                        .with(asAdmin())
                         .content(requestJson)
                         .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isOk())
@@ -155,6 +166,7 @@ class UserControllerTest {
                 """;
 
         mockMvc.perform(patch("/api/v1/admin/users/{id}/roles", 999L)
+                        .with(asAdmin())
                         .content(requestJson)
                         .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isNotFound())
@@ -173,6 +185,7 @@ class UserControllerTest {
                 """;
 
         mockMvc.perform(patch("/api/v1/admin/users/{id}/roles", createdUser.getId())
+                        .with(asAdmin())
                         .content(requestJson)
                         .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isBadRequest());
@@ -182,13 +195,15 @@ class UserControllerTest {
     void shouldDeleteUserWhenCorrectInput() throws Exception {
         User createdUser = createUser(validUsername, validPassword, Set.of(Role.USER));
 
-        mockMvc.perform(delete("/api/v1/admin/users/{id}", createdUser.getId()))
+        mockMvc.perform(delete("/api/v1/admin/users/{id}", createdUser.getId())
+                        .with(asAdmin()))
                 .andExpect(status().isNoContent());
     }
 
     @Test
     void shouldReturnNotFoundWhenDeleteUserWithUserDoesNotExist() throws Exception {
-        mockMvc.perform(delete("/api/v1/admin/users/{id}", 999L))
+        mockMvc.perform(delete("/api/v1/admin/users/{id}", 999L)
+                        .with(asAdmin()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.details[0].field").value("id"))
                 .andExpect(jsonPath("$.details[0].message").value("User with id 999 not found."));
@@ -198,7 +213,8 @@ class UserControllerTest {
     void shouldReturnNotFoundWhenDeleteUserWithAlreadyDeletedUser() throws Exception {
         User createdUser = createDeletedUser(validUsername, validPassword, Set.of(Role.USER));
 
-        mockMvc.perform(delete("/api/v1/admin/users/{id}", createdUser.getId()))
+        mockMvc.perform(delete("/api/v1/admin/users/{id}", createdUser.getId())
+                        .with(asAdmin()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.details[0].field").value("id"))
                 .andExpect(jsonPath("$.details[0].message").value("User with id " + createdUser.getId() + " not found."));
@@ -221,5 +237,20 @@ class UserControllerTest {
             users.add(user);
         }
         return users;
+    }
+
+
+    private RequestPostProcessor asAdmin() {
+        return jwt()
+                .jwt(j -> j.subject(adminUser.getUsername())
+                        .claim("uid", adminUser.getId()))
+                .authorities(new SimpleGrantedAuthority("ROLE_ADMIN"));
+    }
+
+    private RequestPostProcessor asUser(User user) {
+        return jwt()
+                .jwt(j -> j.subject(user.getUsername())
+                        .claim("uid", user.getId()))
+                .authorities(new SimpleGrantedAuthority("ROLE_USER"));
     }
 }

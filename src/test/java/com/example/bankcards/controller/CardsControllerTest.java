@@ -8,7 +8,7 @@ import com.example.bankcards.entity.Role;
 import com.example.bankcards.entity.User;
 import com.example.bankcards.repository.CardRepository;
 import com.example.bankcards.repository.UserRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,16 +20,18 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import org.springframework.http.HttpHeaders;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.math.BigDecimal;
 import java.util.*;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -51,10 +53,8 @@ class CardsControllerTest {
     @Autowired
     private JsonMapper objectMapper;
 
-    @Autowired
-    JdbcTemplate jdbc;
-
     private User testUser;
+    private User adminUser;
 
     private String validPan = "1234567890123456";
     private String invalidPan = "invalid_pan";
@@ -67,6 +67,7 @@ class CardsControllerTest {
     @BeforeEach
     void setUp() {
         testUser = createUser("testuser", "hashedpassword", Set.of(Role.USER));
+        adminUser = createUser("admin", "hashedpassword", Set.of(Role.ADMIN));
     }
 
     @Test
@@ -87,7 +88,8 @@ class CardsControllerTest {
         mockMvc.perform(get("/api/v1/admin/cards")
                         .param("page", "" + page)
                         .param("size", "" + size)
-                        .accept(MediaType.APPLICATION_JSON_VALUE))
+                        .accept(MediaType.APPLICATION_JSON_VALUE)
+                        .with(asAdmin()))
                 .andExpect(status().isOk())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.page").value(page))
@@ -104,6 +106,7 @@ class CardsControllerTest {
         String requestJson = objectMapper.writeValueAsString(request);
 
         String actualJson = mockMvc.perform(post("/api/v1/admin/cards")
+                        .with(asAdmin())
                         .content(requestJson)
                         .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isOk())
@@ -128,6 +131,7 @@ class CardsControllerTest {
 
         String requestJson = objectMapper.writeValueAsString(request);
         String actualJson = mockMvc.perform(post("/api/v1/admin/cards")
+                        .with(asAdmin())
                         .content(requestJson)
                         .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isBadRequest())
@@ -154,6 +158,7 @@ class CardsControllerTest {
 
         String requestJson = objectMapper.writeValueAsString(request);
         String actualJson = mockMvc.perform(post("/api/v1/admin/cards")
+                        .with(asAdmin())
                         .content(requestJson)
                         .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isBadRequest())
@@ -180,6 +185,7 @@ class CardsControllerTest {
 
         String requestJson = objectMapper.writeValueAsString(request);
         String actualJson = mockMvc.perform(post("/api/v1/admin/cards")
+                        .with(asAdmin())
                         .content(requestJson)
                         .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isBadRequest())
@@ -209,6 +215,7 @@ class CardsControllerTest {
 
         String requestJson = objectMapper.writeValueAsString(request);
         String actualJson = mockMvc.perform(post("/api/v1/admin/cards")
+                        .with(asAdmin())
                         .content(requestJson)
                         .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isBadRequest())
@@ -235,6 +242,7 @@ class CardsControllerTest {
 
         String requestJson = objectMapper.writeValueAsString(request);
         String actualJson = mockMvc.perform(post("/api/v1/admin/cards")
+                        .with(asAdmin())
                         .content(requestJson)
                         .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isNotFound())
@@ -261,6 +269,7 @@ class CardsControllerTest {
 
         String requestJson = objectMapper.writeValueAsString(request);
         String actualJson = mockMvc.perform(post("/api/v1/admin/cards")
+                        .with(asAdmin())
                         .content(requestJson)
                         .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isBadRequest())
@@ -287,6 +296,7 @@ class CardsControllerTest {
 
         String requestJson = objectMapper.writeValueAsString(request);
         String actualJson = mockMvc.perform(post("/api/v1/admin/cards")
+                        .with(asAdmin())
                         .content(requestJson)
                         .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isBadRequest())
@@ -335,7 +345,7 @@ class CardsControllerTest {
                 .toList();
 
         mockMvc.perform(get("/api/v1/cards")
-                        .header("X-User-Id", testUser.getId().toString())
+                        .with(asUser(testUser))
                         .param("page", "" + page)
                         .param("size", "" + size)
                         .accept(MediaType.APPLICATION_JSON_VALUE))
@@ -352,7 +362,8 @@ class CardsControllerTest {
     void shouldReturnCardWithChangedStatusWhenUpdateCardStatus() throws Exception {
         Card card = createCard(testUser, "1234", validExpiryMonth, validExpiryYear);
 
-        String actualJson = mockMvc.perform(patch("/api/v1/admin/cards/" + card.getId() + "/status")
+        String actualJson = mockMvc.perform(patch("/api/v1/admin/cards/{id}/status", card.getId())
+                        .with(asAdmin())
                         .content(objectMapper.writeValueAsString(new UpdateStatusRequest(CardStatus.BLOCKED)))
                         .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isOk())
@@ -376,7 +387,8 @@ class CardsControllerTest {
     void shouldReturnConflictWhenTryToChangeCardStatusFromExpiredToActive() throws Exception {
         Card card = createCardWithStatus(testUser, "1234", validExpiryMonth, validExpiryYear, CardStatus.EXPIRED);
 
-        String actualJson = mockMvc.perform(patch("/api/v1/admin/cards/" + card.getId() + "/status")
+        String actualJson = mockMvc.perform(patch("/api/v1/admin/cards/{id}/status", card.getId())
+                        .with(asAdmin())
                         .content(objectMapper.writeValueAsString(new UpdateStatusRequest(CardStatus.ACTIVE)))
                         .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isConflict())
@@ -396,7 +408,8 @@ class CardsControllerTest {
     void shouldReturn204StatusWhenDeleteCard() throws Exception {
         Card card = createCard(testUser, "1234", validExpiryMonth, validExpiryYear);
 
-        mockMvc.perform(delete("/api/v1/admin/cards/" + card.getId()))
+        mockMvc.perform(delete("/api/v1/admin/cards/" + card.getId())
+                        .with(asAdmin()))
                 .andExpect(status().isNoContent());
 
         cardRepository.flush();
@@ -425,5 +438,19 @@ class CardsControllerTest {
             cards.add(createCard(owner, 1000 + i + "", validExpiryMonth, validExpiryYear));
         }
         return cards;
+    }
+
+    private RequestPostProcessor asAdmin() {
+        return jwt()
+                .jwt(j -> j.subject(adminUser.getUsername())
+                        .claim("uid", adminUser.getId()))
+                .authorities(new SimpleGrantedAuthority("ROLE_ADMIN"));
+    }
+
+    private RequestPostProcessor asUser(User user) {
+        return jwt()
+                .jwt(j -> j.subject(user.getUsername())
+                        .claim("uid", user.getId()))
+                .authorities(new SimpleGrantedAuthority("ROLE_USER"));
     }
 }
