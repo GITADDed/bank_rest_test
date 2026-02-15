@@ -34,6 +34,7 @@ public class Card {
     @Enumerated(EnumType.STRING)
     private CardStatus status;
 
+    @Setter
     @Column(nullable = false)
     private BigDecimal balance;
 

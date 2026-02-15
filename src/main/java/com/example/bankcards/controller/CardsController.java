@@ -6,6 +6,7 @@ import com.example.bankcards.dto.UpdateStatusRequest;
 import com.example.bankcards.entity.CardStatus;
 import com.example.bankcards.dto.PageResponse;
 import com.example.bankcards.service.CardService;
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -52,12 +53,12 @@ public class CardsController {
     }
 
     @PostMapping("/admin/cards")
-    CardResponse createCard(@RequestBody CardRequest request) {
+    CardResponse createCard(@Valid @RequestBody CardRequest request) {
         return cardService.createCard(request);
     }
 
     @PatchMapping("/admin/cards/{id}/status")
-    CardResponse updateCardStatus(@PathVariable Long id, @RequestBody UpdateStatusRequest request) {
+    CardResponse updateCardStatus(@PathVariable Long id, @Valid @RequestBody UpdateStatusRequest request) {
         return cardService.updateCardStatus(id, request.status());
     }
 
