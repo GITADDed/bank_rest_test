@@ -1,0 +1,67 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-create-transfers
+      author: kahu9
+      objectQuotingStrategy: QUOTE_ONLY_RESERVED_WORDS
+      changes:
+        - createTable:
+            columns:
+              - column:
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_transfers
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+              - column:
+                  constraints:
+                    nullable: false
+                  name: from_card_id
+                  type: BIGINT
+              - column:
+                  constraints:
+                    nullable: false
+                  name: to_card_id
+                  type: BIGINT
+              - column:
+                  constraints:
+                    nullable: false
+                  name: amount
+                  type: DECIMAL(19,2)
+              - column:
+                  constraints:
+                    nullable: false
+                  name: status
+                  type: VARCHAR(20)
+            tableName: transfers
+
+        - addForeignKeyConstraint:
+            baseTableName: transfers
+            baseColumnNames: from_card_id
+            referencedTableName: cards
+            referencedColumnNames: id
+            constraintName: fk_transfers_from_card
+            onDelete: RESTRICT
+
+        - addForeignKeyConstraint:
+            baseTableName: transfers
+            baseColumnNames: to_card_id
+            referencedTableName: cards
+            referencedColumnNames: id
+            constraintName: fk_transfers_to_card
+            onDelete: RESTRICT
+
+        - createIndex:
+            indexName: idx_transfers_from
+            tableName: transfers
+            columns:
+              - column:
+                  name: from_card_id
+
+              - createIndex:
+                  indexName: idx_transfers_to
+                  tableName: transfers
+                  columns:
+                    - column:
+                        name: to_card_id
