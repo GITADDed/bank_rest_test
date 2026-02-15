@@ -60,6 +60,12 @@ public class ApiExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
     }
 
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ErrorResponse> handleUnauthorizedException(UnauthorizedException ex) {
+        var body = fromExceptionToErrorResponse(ex);
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
+    }
+
     private ErrorResponse fromExceptionToErrorResponse(BaseException ex) {
         List<ErrorDetail> details = ex.getViolations().stream()
                 .map(v -> new ErrorDetail(v.field(), v.message()))
