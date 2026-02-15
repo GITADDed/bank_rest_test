@@ -1,7 +1,9 @@
 package com.example.bankcards.entity;
 
+import com.example.bankcards.dto.UserResponse;
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -25,11 +27,16 @@ public class User {
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Card> cards = new ArrayList<>();
 
+    @Setter
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)
     private Set<Role> roles = new HashSet<>();
+
+    @Setter
+    @Column(nullable = false)
+    private Boolean deleted = false;
 
     protected User() {}
 
@@ -41,5 +48,9 @@ public class User {
 
     public boolean hasRole(Role role) {
         return roles.contains(role);
+    }
+
+    public UserResponse toDTO() {
+        return new UserResponse(id, username, roles);
     }
 }
