@@ -6,7 +6,9 @@ import com.example.bankcards.util.ResponseBuilder;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.List;
@@ -14,23 +16,48 @@ import java.util.List;
 @RestControllerAdvice
 public class ApiExceptionHandler {
     @ExceptionHandler(ValidationException.class)
-    public ResponseEntity<ErrorResponse> handleValidation(ValidationException ex, HttpServletRequest req) {
+    public ResponseEntity<ErrorResponse> handleValidation(ValidationException ex) {
         var body = fromExceptionToErrorResponse(ex);
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
     @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleNotFound(NotFoundException ex, HttpServletRequest req) {
+    public ResponseEntity<ErrorResponse> handleNotFound(NotFoundException ex) {
         var body = fromExceptionToErrorResponse(ex);
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
     }
 
     @ExceptionHandler(ConflictException.class)
-    public ResponseEntity<ErrorResponse> handleAny(ConflictException ex, HttpServletRequest req) {
+    public ResponseEntity<ErrorResponse> handleConflictException(ConflictException ex) {
         var body = fromExceptionToErrorResponse(ex);
         return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
+
+        List<ErrorDetail> errors = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(error -> new ErrorDetail(
+                        error.getField(),
+                        error.getDefaultMessage()
+                ))
+                .toList();
+        var body = ResponseBuilder.buildErrorResponse(
+                "VALIDATION_ERROR",
+                "Validation failed for one or more fields.",
+                errors
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ErrorResponse> handleForbiddenException(ForbiddenException ex) {
+        var body = fromExceptionToErrorResponse(ex);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
     }
 
     private ErrorResponse fromExceptionToErrorResponse(BaseException ex) {
@@ -40,6 +67,8 @@ public class ApiExceptionHandler {
 
         return ResponseBuilder.buildErrorResponse(ex.getCode(), ex.getMessage(), details);
     }
+
+
 //    @ExceptionHandler(Exception.class)
 //    public ResponseEntity<ApiError> handleAny(Exception ex, HttpServletRequest req) {
 //        var body = new ApiError(
