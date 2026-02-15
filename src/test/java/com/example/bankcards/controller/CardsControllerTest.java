@@ -1,6 +1,7 @@
 package com.example.bankcards.controller;
 
 import com.example.bankcards.dto.CardRequest;
+import com.example.bankcards.dto.UpdateStatusRequest;
 import com.example.bankcards.entity.CardStatus;
 import com.example.bankcards.entity.Card;
 import com.example.bankcards.entity.Role;
@@ -340,6 +341,7 @@ class CardsControllerTest {
                         .param("size", "" + size)
                         .accept(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isOk())
+                .andDo(print())
                 .andExpect(jsonPath("$.page").value(page))
                 .andExpect(jsonPath("$.size").value(size))
                 .andExpect(jsonPath("$.totalElements").value(totalCards))
@@ -353,7 +355,7 @@ class CardsControllerTest {
         Card card = createCard(testUser, "1234", validExpiryMonth, validExpiryYear);
 
         String actualJson = mockMvc.perform(patch("/api/v1/admin/cards/" + card.getId() + "/status")
-                        .content(objectMapper.writeValueAsString(CardStatus.BLOCKED))
+                        .content(objectMapper.writeValueAsString(new UpdateStatusRequest(CardStatus.BLOCKED)))
                         .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -377,7 +379,7 @@ class CardsControllerTest {
         Card card = createCardWithStatus(testUser, "1234", validExpiryMonth, validExpiryYear, CardStatus.EXPIRED);
 
         String actualJson = mockMvc.perform(patch("/api/v1/admin/cards/" + card.getId() + "/status")
-                        .content(objectMapper.writeValueAsString(CardStatus.ACTIVE))
+                        .content(objectMapper.writeValueAsString(new UpdateStatusRequest(CardStatus.ACTIVE)))
                         .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isConflict())
                 .andReturn().getResponse().getContentAsString();

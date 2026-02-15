@@ -95,7 +95,7 @@ public class CardServiceImpl implements CardService {
 
     @Override
     public void deleteCard(Long id) {
-        Card card = cardRepository.findById(id).orElseThrow(() -> new NotFoundException(
+        Card card = cardRepository.findByIdAndDeletedFalse(id).orElseThrow(() -> new NotFoundException(
                 List.of(new Violation("id", "Card with id " + id + " not found."))
         ));
 

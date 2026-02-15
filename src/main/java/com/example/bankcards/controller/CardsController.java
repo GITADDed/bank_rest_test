@@ -2,6 +2,7 @@ package com.example.bankcards.controller;
 
 import com.example.bankcards.dto.CardRequest;
 import com.example.bankcards.dto.CardResponse;
+import com.example.bankcards.dto.UpdateStatusRequest;
 import com.example.bankcards.entity.CardStatus;
 import com.example.bankcards.dto.PageResponse;
 import com.example.bankcards.service.CardService;
@@ -45,14 +46,19 @@ public class CardsController {
         return cardService.getCardById(id);
     }
 
+    @GetMapping("/admin/cards/{id}")
+    CardResponse getCardByIdForAdmin(@PathVariable Long id) {
+        return cardService.getCardById(id);
+    }
+
     @PostMapping("/admin/cards")
     CardResponse createCard(@RequestBody CardRequest request) {
         return cardService.createCard(request);
     }
 
     @PatchMapping("/admin/cards/{id}/status")
-    CardResponse updateCardStatus(@PathVariable Long id, @RequestBody CardStatus status) {
-        return cardService.updateCardStatus(id, status);
+    CardResponse updateCardStatus(@PathVariable Long id, @RequestBody UpdateStatusRequest request) {
+        return cardService.updateCardStatus(id, request.status());
     }
 
     @DeleteMapping("/admin/cards/{id}")
