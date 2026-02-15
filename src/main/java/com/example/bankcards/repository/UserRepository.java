@@ -12,4 +12,5 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, Long> {
     Page<User> findAllByDeletedFalse(Pageable pageable);
     Optional<User> findByIdAndDeletedFalse(Long id);
+    Optional<User> findByUsernameAndDeletedFalse(String username);
 }
