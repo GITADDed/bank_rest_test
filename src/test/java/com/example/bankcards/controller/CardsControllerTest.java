@@ -1,7 +1,7 @@
 package com.example.bankcards.controller;
 
 import com.example.bankcards.dto.CardRequest;
-import com.example.bankcards.dto.CardStatus;
+import com.example.bankcards.entity.CardStatus;
 import com.example.bankcards.entity.Card;
 import com.example.bankcards.entity.Role;
 import com.example.bankcards.entity.User;
@@ -9,6 +9,7 @@ import com.example.bankcards.repository.CardRepository;
 import com.example.bankcards.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
@@ -18,6 +19,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -25,14 +27,10 @@ import org.springframework.http.HttpHeaders;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -52,6 +50,9 @@ class CardsControllerTest {
 
     @Autowired
     private JsonMapper objectMapper;
+
+    @Autowired
+    JdbcTemplate jdbc;
 
     private User testUser;
 
@@ -352,7 +353,7 @@ class CardsControllerTest {
         Card card = createCard(testUser, "1234", validExpiryMonth, validExpiryYear);
 
         String actualJson = mockMvc.perform(patch("/api/v1/admin/cards/" + card.getId() + "/status")
-                        .content(objectMapper.writeValueAsString(CardStatus.INACTIVE))
+                        .content(objectMapper.writeValueAsString(CardStatus.BLOCKED))
                         .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -364,11 +365,46 @@ class CardsControllerTest {
                     "last4": "1234",
                     "expiryMonth": 10,
                     "expiryYear": 2028,
-                    "status": "INACTIVE",
+                    "status": "BLOCKED",
                     "balance": 0.00
                 }
                 """.formatted(card.getId());
         JSONAssert.assertEquals(expectedJson, actualJson, JSONCompareMode.LENIENT);
+    }
+
+    @Test
+    void shouldReturnConflictWhenTryToChangeCardStatusFromExpiredToActive() throws Exception {
+        Card card = createCardWithStatus(testUser, "1234", validExpiryMonth, validExpiryYear, CardStatus.EXPIRED);
+
+        String actualJson = mockMvc.perform(patch("/api/v1/admin/cards/" + card.getId() + "/status")
+                        .content(objectMapper.writeValueAsString(CardStatus.ACTIVE))
+                        .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(status().isConflict())
+                .andReturn().getResponse().getContentAsString();
+
+        String expectedJson = """
+                {
+                    "code": "INVALID_STATUS_TRANSITION",
+                    "message": "Cannot change status from EXPIRED to ACTIVE.",
+                    "details": []
+                }
+                """;
+        JSONAssert.assertEquals(expectedJson, actualJson, JSONCompareMode.LENIENT);
+    }
+
+    @Test
+    void shouldReturn204StatusWhenDeleteCard() throws Exception {
+        Card card = createCard(testUser, "1234", validExpiryMonth, validExpiryYear);
+
+        mockMvc.perform(delete("/api/v1/admin/cards/" + card.getId()))
+                .andExpect(status().isNoContent());
+
+        cardRepository.flush();
+
+        Optional<Card> deletedCard = cardRepository.findById(card.getId());
+
+        Assertions.assertTrue(deletedCard.isPresent());
+        Assertions.assertTrue(deletedCard.get().getDeleted());
     }
 
     private User createUser(String username, String passwordHash, Set<Role> roles) {
@@ -377,6 +413,10 @@ class CardsControllerTest {
 
     private Card createCard(User owner, String last4, Integer expiryMonth, Integer expiryYear) {
         return cardRepository.save(new Card(owner, last4, expiryMonth, expiryYear, CardStatus.ACTIVE, BigDecimal.ZERO));
+    }
+
+    private Card createCardWithStatus(User owner, String last4, Integer expiryMonth, Integer expiryYear, CardStatus status) {
+        return cardRepository.save(new Card(owner, last4, expiryMonth, expiryYear, status, BigDecimal.ZERO));
     }
 
     private ArrayList<Card> createCards(User owner, int count) {
