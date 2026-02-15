@@ -24,6 +24,12 @@ databaseChangeLog:
                     nullable: false
                   name: password_hash
                   type: VARCHAR(255)
+              - column:
+                  constraints:
+                    nullable: false
+                  name: deleted
+                  type: BIT(1)
+                  defaultValue: false
             tableName: users
         - addUniqueConstraint:
             columnNames: username
