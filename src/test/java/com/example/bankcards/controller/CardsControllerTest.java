@@ -31,7 +31,6 @@ import java.math.BigDecimal;
 import java.util.*;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -167,7 +166,7 @@ class CardsControllerTest {
                     "details": [
                         {
                             "field": "pan",
-                            "message": "PAN must be not null or empty."
+                            "message": "PAN must not be blank."
                         }
                     ]
                 }
@@ -300,7 +299,7 @@ class CardsControllerTest {
                     "details": [
                         {
                             "field": "expiryYear",
-                            "message": "Expiry year must be positive."
+                            "message": "Expiry year must be the current year or a future year."
                         }
                     ]
                 }
