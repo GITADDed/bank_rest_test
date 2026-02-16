@@ -8,3 +8,4 @@
 - Для первого логина используйте get запрос с json {"username": "admin", "password": "admin123"} http://localhost:8080/api/v1/admin/login
 - Для доступа к API перейдите по адресу http://localhost:8080/swagger-ui
 
+На GitHub подключены GitHub Actions для автоматического запуска тестов при каждом коммите в ветку main.
