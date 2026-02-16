@@ -3,7 +3,7 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
     services:
       mysql:
@@ -13,8 +13,6 @@ jobs:
         ports:
           - 3306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
-  build:
-    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
