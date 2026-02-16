@@ -8,17 +8,12 @@ import com.example.bankcards.entity.Role;
 import com.example.bankcards.entity.User;
 import com.example.bankcards.repository.CardRepository;
 import com.example.bankcards.repository.UserRepository;
-import org.springframework.transaction.annotation.Transactional;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.ActiveProfiles;
@@ -36,11 +31,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
 @ActiveProfiles("test")
-@AutoConfigureMockMvc
-@Transactional
-class CardsControllerTest {
+class CardsControllerTest extends IntegrationTestBase {
     @Autowired
     private MockMvc mockMvc;
 
@@ -66,8 +58,16 @@ class CardsControllerTest {
 
     @BeforeEach
     void setUp() {
+        userRepository.deleteAll();
+        cardRepository.deleteAll();
         testUser = createUser("testuser", "hashedpassword", Set.of(Role.USER));
         adminUser = createUser("admin", "hashedpassword", Set.of(Role.ADMIN));
+    }
+
+    @AfterEach
+    void tearDown() {
+        cardRepository.deleteAll();
+        userRepository.deleteAll();
     }
 
     @Test
@@ -360,7 +360,7 @@ class CardsControllerTest {
 
     @Test
     void shouldReturnCardWithChangedStatusWhenUpdateCardStatus() throws Exception {
-        Card card = createCard(testUser, "1234", validExpiryMonth, validExpiryYear);
+        Card card = createCard(testUser,"pan", "1234", validExpiryMonth, validExpiryYear);
 
         String actualJson = mockMvc.perform(patch("/api/v1/admin/cards/{id}/status", card.getId())
                         .with(asAdmin())
@@ -385,7 +385,7 @@ class CardsControllerTest {
 
     @Test
     void shouldReturnConflictWhenTryToChangeCardStatusFromExpiredToActive() throws Exception {
-        Card card = createCardWithStatus(testUser, "1234", validExpiryMonth, validExpiryYear, CardStatus.EXPIRED);
+        Card card = createCardWithStatus(testUser,"pan2", "1234", validExpiryMonth, validExpiryYear, CardStatus.EXPIRED);
 
         String actualJson = mockMvc.perform(patch("/api/v1/admin/cards/{id}/status", card.getId())
                         .with(asAdmin())
@@ -406,7 +406,7 @@ class CardsControllerTest {
 
     @Test
     void shouldReturn204StatusWhenDeleteCard() throws Exception {
-        Card card = createCard(testUser, "1234", validExpiryMonth, validExpiryYear);
+        Card card = createCard(testUser,"pan3", "1234", validExpiryMonth, validExpiryYear);
 
         mockMvc.perform(delete("/api/v1/admin/cards/" + card.getId())
                         .with(asAdmin()))
@@ -424,18 +424,18 @@ class CardsControllerTest {
         return userRepository.save(new User(username, passwordHash, roles));
     }
 
-    private Card createCard(User owner, String last4, Integer expiryMonth, Integer expiryYear) {
-        return cardRepository.save(new Card(owner, last4, expiryMonth, expiryYear, CardStatus.ACTIVE, BigDecimal.ZERO));
+    private Card createCard(User owner, String panHash, String last4, Integer expiryMonth, Integer expiryYear) {
+        return cardRepository.save(new Card(owner, panHash, last4, expiryMonth, expiryYear, CardStatus.ACTIVE, BigDecimal.ZERO));
     }
 
-    private Card createCardWithStatus(User owner, String last4, Integer expiryMonth, Integer expiryYear, CardStatus status) {
-        return cardRepository.save(new Card(owner, last4, expiryMonth, expiryYear, status, BigDecimal.ZERO));
+    private Card createCardWithStatus(User owner, String panHash, String last4, Integer expiryMonth, Integer expiryYear, CardStatus status) {
+        return cardRepository.save(new Card(owner, panHash, last4, expiryMonth, expiryYear, status, BigDecimal.ZERO));
     }
 
     private ArrayList<Card> createCards(User owner, int count) {
         ArrayList<Card> cards = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            cards.add(createCard(owner, 1000 + i + "", validExpiryMonth, validExpiryYear));
+            cards.add(createCard(owner, "pan" + i, 1000 + i + "", validExpiryMonth, validExpiryYear));
         }
         return cards;
     }
