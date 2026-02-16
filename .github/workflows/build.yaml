@@ -17,6 +17,14 @@ jobs:
           java-version: '21'
           cache: maven
 
+      - name: Force docker-java API version
+        run: |
+          mkdir -p "$HOME"
+          cat > "$HOME/.docker-java.properties" <<'EOF'
+          DOCKER_API_VERSION=1.44
+          EOF
+          cat "$HOME/.docker-java.properties"
+
       - name: Show docker info (debug)
         run: |
           docker version
