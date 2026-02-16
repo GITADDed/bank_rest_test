@@ -1,9 +1,64 @@
-# 
-# docker-compose.yml — определяет сервисы для разработки и тестирования.
+services:
+  db:
+    image: mysql:8.4
+    container_name: bankcards-mysql
+    environment:
+      MYSQL_DATABASE: bankcards
+      MYSQL_USER: bankcards_user
+      MYSQL_PASSWORD: strong_password
+      MYSQL_ROOT_PASSWORD: rootpass
+    ports:
+      - "3306:3306"
+    volumes:
+      - bankcards_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-prootpass"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
-Что нужно сделать:
-  - Настроить сервисы для:
-      - PostgreSQL (или MySQL) с начальной базой.
-      - Приложения Spring Boot (если нужно).
-  - Открыть нужные порты (например, 5432, 8080).
-  - Настроить volume для хранения данных БД.
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bankcards-app
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/bankcards?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: bankcards_user
+      SPRING_DATASOURCE_PASSWORD: strong_password
+
+      SECURITY_JWT_SECRET: "bankcards-dev-secret__change-me__Aq9!kZ7#pT4@xV2&nM8*Lr6%uS1^yD3+eG5=Qw0_9JjHhKkLlZzXx"
+
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+
+      SPRING_LIQUIBASE_ENABLED: "true"
+
+      SPRING_LIQUIBASE_CHANGELOG: classpath:db/liquibase/master.yaml
+
+  adminer:
+    image: adminer:latest
+    container_name: bankcards-adminer
+    depends_on:
+      - db
+    ports:
+      - "8081:8080"
+
+  test:
+    image: maven:3.9-eclipse-temurin-21
+    working_dir: /app
+    volumes:
+      - .:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ~/.m2:/root/.m2
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      TESTCONTAINERS_HOST_OVERRIDE: host.docker.internal
+    command: mvn -Dsurefire.printSummary=true test
+volumes:
+  bankcards_mysql_data:
