@@ -19,12 +19,17 @@ public class Card {
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
 
+    @Column(name = "pan_hash", nullable = false, length = 64)
+    private String panHash;
+
     @Column(nullable = false)
     private String last4;
 
+    @Setter
     @Column(name = "expiry_month", nullable = false)
     private Integer expiryMonth;
 
+    @Setter
     @Column(name = "expiry_year", nullable = false)
     private Integer expiryYear;
 
@@ -42,12 +47,14 @@ public class Card {
     private Boolean deleted = false;
 
     @Version
+    @Column(nullable = false)
     private Long version = 0L;
 
     protected Card() {}
 
-    public Card(User owner, String last4, Integer expiryMonth, Integer expiryYear, CardStatus status, BigDecimal balance) {
+    public Card(User owner, String panHash, String last4, Integer expiryMonth, Integer expiryYear, CardStatus status, BigDecimal balance) {
         this.owner = owner;
+        this.panHash = panHash;
         this.last4 = last4;
         this.expiryMonth = expiryMonth;
         this.expiryYear = expiryYear;

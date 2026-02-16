@@ -10,6 +10,7 @@ import com.example.bankcards.exception.NotFoundException;
 import com.example.bankcards.repository.CardRepository;
 import com.example.bankcards.repository.UserRepository;
 import com.example.bankcards.entity.Violation;
+import com.example.bankcards.util.PanHashUtil;
 import com.example.bankcards.validation.validators.request.RequestValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -31,12 +32,19 @@ public class CardServiceImpl implements CardService {
     public CardResponse createCard(CardRequest request) {
         requestValidator.validate(request);
         String last4 = request.pan().substring(request.pan().length() - 4);
+        String panHash = PanHashUtil.sha256Hex("", request.pan());
+
+        if (cardRepository.existsByOwnerIdAndPanHashAndDeletedFalse(request.ownerId(), panHash)) {
+            throw new ConflictException(List.of(new Violation("pan", "Card already exists for this owner.")));
+        }
+
         Card card = new Card(
                 userRepository.findById(
                         request.ownerId()).orElseThrow(() -> new NotFoundException(
                         List.of(new Violation("ownerId", "User with id "
                                 + request.ownerId() + " not found."))
                 )),
+                panHash,
                 last4,
                 request.expiryMonth(),
                 request.expiryYear(),
@@ -62,7 +70,7 @@ public class CardServiceImpl implements CardService {
 
     @Override
     public Page<CardResponse> getMyAllCards(Long ownerId, Pageable pageable) {
-        User user = userRepository.findById(ownerId).orElseThrow(() -> new NotFoundException(
+        User user = userRepository.findByIdAndDeletedFalse(ownerId).orElseThrow(() -> new NotFoundException(
                 List.of(new Violation("ownerId", "User with id " + ownerId + " not found."))
         ));
 
