@@ -5,13 +5,6 @@ on: [ push, pull_request ]
 jobs:
   build:
     runs-on: ubuntu-latest
-    services:
-      mysql:
-        image: mysql:8
-        env:
-          MYSQL_ROOT_PASSWORD: root
-        ports:
-          - 3306:3306
     steps:
       - uses: actions/checkout@v4
 
@@ -33,9 +26,5 @@ jobs:
             sleep 2
           done
 
-      - name: Create test database
-        run: |
-          mysql -h 127.0.0.1 -u root -proot -e "CREATE DATABASE IF NOT EXISTS bankcards;"
-
       - name: Run tests
-        run: mvn clean verify
+        run: mvn clean verify -Dspring.profiles.active=ci
