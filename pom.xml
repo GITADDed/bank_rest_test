@@ -41,6 +41,14 @@
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
+
+			<dependency>
+				<groupId>com.github.docker-java</groupId>
+				<artifactId>docker-java-bom</artifactId>
+				<version>3.4.0</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
 		</dependencies>
 	</dependencyManagement>
 

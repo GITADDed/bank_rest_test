@@ -21,6 +21,11 @@ jobs:
           echo "DOCKER_HOST=$DOCKER_HOST"
           echo "DOCKER_API_VERSION=$DOCKER_API_VERSION"
 
+      - name: Dependency tree (docker-java/testcontainers)
+        run: |
+          mvn -q -DskipTests dependency:tree -Dincludes=com.github.docker-java
+          mvn -q -DskipTests dependency:tree -Dincludes=org.testcontainers
+
       - name: Run tests
         env:
           DOCKER_HOST: "unix:///var/run/docker.sock"
