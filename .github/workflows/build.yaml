@@ -18,10 +18,14 @@ jobs:
         run: |
           docker version
           docker info
-
+          echo "DOCKER_HOST=$DOCKER_HOST"
+          echo "DOCKER_API_VERSION=$DOCKER_API_VERSION"
 
       - name: Run tests
         env:
+          DOCKER_HOST: "unix:///var/run/docker.sock"
+          DOCKER_API_VERSION: "1.44"
+
           TESTCONTAINERS_RYUK_DISABLED: "true"
           TESTCONTAINERS_LOG_LEVEL: "INFO"
-        run: mvn clean verify
+        run: mvn -B -ntp clean verify
