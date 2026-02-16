@@ -1,6 +1,6 @@
-name: build.yaml
-on:
-  - push
+name: CI
+
+on: [push, pull_request]
 
 jobs:
   build:
@@ -8,13 +8,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: '21'
           cache: maven
-      - name: Make mvnw executable
-        run: chmod +x ./mvnw
-      - name: Build with Maven
-        run: ./mvnw -B clean verify
+
+      - name: Show docker info (debug)
+        run: |
+          docker version
+          docker info
+
+      - name: Run tests
+        run: mvn -B clean verify
