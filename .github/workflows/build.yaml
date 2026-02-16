@@ -20,4 +20,4 @@ jobs:
           docker info
 
       - name: Run tests
-        run: mvn -B clean verify
+        run: mvn clean verify
