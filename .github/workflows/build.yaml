@@ -19,12 +19,9 @@ jobs:
           docker version
           docker info
 
-      - name: Wait for MySQL to be ready
-        run: |
-          until mysqladmin ping -h 127.0.0.1 -P 3306 -u root -proot --silent; do
-            echo "Waiting for MySQL..."
-            sleep 2
-          done
 
       - name: Run tests
-        run: mvn clean verify -Dspring.profiles.active=ci
+        env:
+          TESTCONTAINERS_RYUK_DISABLED: "true"
+          TESTCONTAINERS_LOG_LEVEL: "INFO"
+        run: mvn clean verify
