@@ -20,6 +20,11 @@ databaseChangeLog:
                   name: owner_id
                   type: BIGINT
               - column:
+                  name: pan_hash
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
                   constraints:
                     nullable: false
                   name: last4
@@ -53,9 +58,9 @@ databaseChangeLog:
               - column:
                   constraints:
                     nullable: false
-                    name: version
-                    type: BIGINT
-                    defaultValue: 0
+                  name: version
+                  type: BIGINT
+                  defaultValue: 0
             tableName: cards
         - createIndex:
             indexName: ix_cards_owner_id
@@ -69,3 +74,7 @@ databaseChangeLog:
             constraintName: FK_CARDS_ON_OWNER
             referencedColumnNames: id
             referencedTableName: users
+        - addUniqueConstraint:
+            tableName: cards
+            columnNames: owner_id, pan_hash
+            constraintName: uk_cards_owner_panhash

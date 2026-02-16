@@ -7,3 +7,5 @@ databaseChangeLog:
       file: db/liquibase/changes/003-user-roles.yaml
   - include:
       file: db/liquibase/changes/004-transfers.yaml
+  - include:
+      file: db/liquibase/changes/900-seed-admin.sql
