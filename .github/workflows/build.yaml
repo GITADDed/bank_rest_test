@@ -23,8 +23,8 @@ jobs:
 
       - name: Dependency tree (docker-java/testcontainers)
         run: |
-          mvn -q -DskipTests dependency:tree -Dincludes=com.github.docker-java
-          mvn -q -DskipTests dependency:tree -Dincludes=org.testcontainers
+          mvn -DskipTests dependency:tree -Dincludes=com.github.docker-java
+          mvn -DskipTests dependency:tree -Dincludes=org.testcontainers
 
       - name: Run tests
         env:
