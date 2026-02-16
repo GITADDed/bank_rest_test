@@ -5,6 +5,9 @@ on: [ push, pull_request ]
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      DOCKER_API_VERSION: "1.44"
+      TESTCONTAINERS_LOG_LEVEL: "INFO"
     steps:
       - uses: actions/checkout@v4
 
@@ -27,10 +30,4 @@ jobs:
           mvn -DskipTests dependency:tree -Dincludes=org.testcontainers
 
       - name: Run tests
-        env:
-          DOCKER_HOST: "unix:///var/run/docker.sock"
-          DOCKER_API_VERSION: "1.44"
-
-          TESTCONTAINERS_RYUK_DISABLED: "true"
-          TESTCONTAINERS_LOG_LEVEL: "INFO"
         run: mvn -B -ntp clean verify
