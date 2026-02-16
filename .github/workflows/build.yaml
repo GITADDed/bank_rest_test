@@ -28,7 +28,7 @@ jobs:
 
       - name: Create test database
         run: |
-          mysql -h 127.0.0.1 -u root -proot -e "CREATE DATABASE IF NOT EXISTS bankcards;"
+          mysql -h 127.0.0.1 -u root -p root -e "CREATE DATABASE IF NOT EXISTS bankcards;"
 
       - name: Run tests
         run: mvn clean verify
