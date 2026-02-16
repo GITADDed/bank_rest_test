@@ -1,4 +1,3 @@
-# application.yml — главный конфигурационный файл Spring Boot.
 spring:
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/bankcards}
@@ -21,3 +20,12 @@ security:
     secret: ${SECURITY_JWT_SECRET:"bankcards-dev-secret__change-me__Aq9!kZ7#pT4@xV2&nM8*Lr6%uS1^yD3+eG5=Qw0_9JjHhKkLlZzXx"}
     issuer: "bankcards"
     ttl-minutes: 60
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui
+    operationsSorter: method
+    tagsSorter: alpha
+
