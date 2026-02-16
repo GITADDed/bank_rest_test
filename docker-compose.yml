@@ -40,14 +40,6 @@ services:
 
       SPRING_LIQUIBASE_CHANGELOG: classpath:db/liquibase/master.yaml
 
-  adminer:
-    image: adminer:latest
-    container_name: bankcards-adminer
-    depends_on:
-      - db
-    ports:
-      - "8081:8080"
-
   test:
     image: maven:3.9-eclipse-temurin-21
     working_dir: /app
